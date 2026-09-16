@@ -401,8 +401,8 @@ window.addEventListener('hashchange', () => {
 async function refreshActivity() {
   const res = await fetch('activity');
   if (!res.ok) return;
-  seen[currentForum] = activity[currentForum] || 0;
   activity = await res.json();
+  seen[currentForum] = activity[currentForum] || 0;
   saveSeen();
   loadForumList();
 }
