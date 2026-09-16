@@ -33,12 +33,17 @@ function toggleTheme() {
 
 applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'light');
 
+const fromHash = location.hash.replace('#', '');
+let currentForum = forumByID(fromHash) ? fromHash : FORUMS[0].id;
+
 window.onload = function(){
   const savedBackground = localStorage.getItem(BACKGROUND_STORAGE_KEY);
   if (!savedBackground){
     return;
   }
   document.body.style.backgroundImage = `url('${savedBackground}')`;
+  refreshActivity();
+  
 }
 
 let activity = {};
@@ -59,9 +64,6 @@ function saveSeen(){
 function unreadCount(id) {
   return Math.max(0, (activity[id] || 0) - (seen[id] || 0));
 }
-
-const fromHash = location.hash.replace('#', '');
-let currentForum = forumByID(fromHash) ? fromHash : FORUMS[0].id;
 
 const ADMIN_NAME = null;
 const CONTRIBUTOR_NAMES = ["nathan daniel", "lawrence", "lawrence-alt"];
@@ -399,8 +401,8 @@ window.addEventListener('hashchange', () => {
 async function refreshActivity() {
   const res = await fetch('activity');
   if (!res.ok) return;
-  seen[currentForum] = activity[currentForum] || 0;
   activity = await res.json();
+  seen[currentForum] = activity[currentForum] || 0;
   saveSeen();
   loadForumList();
 }
