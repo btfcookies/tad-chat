@@ -310,7 +310,7 @@ app.post('/messages', async (req, res) => {
   } catch (err) {
     console.error('Failed to remember user:', err);
   }
-  console.log(msg);
+  console.log("new message: " + msg);
   res.json(toPublicMessage(msg));
 });
 
