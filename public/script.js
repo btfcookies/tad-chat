@@ -361,7 +361,8 @@ function loadForumList() {
     blurb.className = 'forum-blurb-inline';
     blurb.textContent = ' ' + f.blurb;
 
-    btn.append(label, blurb);
+    btn.append(label);
+    if (f.blurb) btn.append(blurb);
     btn.addEventListener('click', () => switchForum(f.id));
     
     const count = unreadCount(f.id);
@@ -390,6 +391,62 @@ function switchForum(id){
   loadMessages({ forceScroll: true });
   refreshActivity();
 }
+
+async function loadCustomForums() {
+  const res = await fetch('/forums');
+  if (!res.ok) return;
+  const custom = await res.json();
+  const known = new Set(FORUMS.map((f) => f.id));
+  const added = custom.filter((f) => !known.has(f.id));
+  if (added.length === 0) return;
+  FORUMS.push(...added);
+
+  const hashId = location.hash.replace('#', '');
+  if (hashId !== currentForum && forumByID(hashId)) {
+    switchForum(hashId);
+  } else {
+    loadForumList();
+  }
+}
+
+async function createForum() {
+  const input = document.getElementById('new-forum-input');
+  const button = document.getElementById('new-forum-btn');
+  const error = document.getElementById('new-forum-error');
+  const forumName = input.value.trim();
+  if (forumName === '') return;
+
+  error.hidden = true;
+  button.disabled = true;
+  try {
+    const res = await fetch('/forums', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({forumName, name: myName}),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      error.textContent = data.error || 'Could not create forum.';
+      error.hidden = false;
+      return;
+    }
+    input.value = '';
+    if (!forumByID(data.forum.id)) FORUMS.push(data.forum);
+    switchForum(data.forum.id);
+  } catch {
+    error.textContent = 'Could not create forum.';
+    error.hidden = false;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+document.getElementById('new-forum-input').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    createForum();
+  }
+});
 
 window.addEventListener('hashchange', () => {
   const id = location.hash.replace('#', '');
@@ -440,6 +497,8 @@ setInterval(getUserCount, 30000);
 getUserCount();
 loadForumList();
 switchForum(currentForum);
+loadCustomForums();
+setInterval(loadCustomForums, 30000);
 setInterval(loadMessages, 3000);
 loadMessages();
 setInterval(refreshActivity, 3000);

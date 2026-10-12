@@ -13,6 +13,10 @@ const USERS_KEY = 'users';
 const ACCOUNTS_KEY = 'accounts';
 const SESSIONS_KEY = 'sessions';
 const BANNED_IPS_KEY = 'banned_ips';
+const CUSTOM_FORUMS_KEY = 'custom_forums';
+const FORUM_CREATIONS_KEY = 'forum_creations';
+const FORUM_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const FORUM_NAME_MAX = 40;
 let bannedIps = [];
 const forum_ids = ['general-discussion','math-on-level', 'math-honors', 'science-lane',  'science-carron', 'humanities-alipour', 'humanities-fox', 'humanities-balan', 'humanities-rutherford'];
 const isForum = (id) => forum_ids.includes(id);
@@ -21,6 +25,8 @@ let messages = {};
 let users = [];
 let accounts = {};
 let sessions = {};
+let customForums = [];
+let forumCreations = {};
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '');
 const truncate = (value, maxLength) => normalize(value).slice(0, maxLength);
@@ -35,6 +41,15 @@ const telemetryInt = (value, max) =>
 
 
 async function loadState() {
+  const storedForums = await redis.get(CUSTOM_FORUMS_KEY);
+  customForums = Array.isArray(storedForums) ? storedForums : [];
+  for (const forum of customForums) {
+    if (!isForum(forum.id)) forum_ids.push(forum.id);
+  }
+
+  const storedCreations = await redis.get(FORUM_CREATIONS_KEY);
+  forumCreations = storedCreations && typeof storedCreations === 'object' ? storedCreations : {};
+
   const entries = await Promise.all(
     forum_ids.map(async (id) => [id, await redis.get(messagesKey(id))])
   );
@@ -310,6 +325,73 @@ app.get('/messages', (req, res) => {
     return res.status(400).json({ ok: false, error: 'Unknown forum.' });
   }
   res.json((messages[forum] || []).map(toPublicMessage));
+});
+
+app.get('/forums', (req, res) => {
+  res.json(customForums.map(({ id, label, blurb }) => ({ id, label, blurb })));
+});
+
+app.post('/forums', async (req, res) => {
+  if (bannedIps.includes(truncate(req.ip, 100))) {
+    return res.status(403).json({ ok: false, error: 'Forbidden.' });
+  }
+
+  const label = normalize(req.body.forumName).replace(/\s+/g, ' ');
+  if (!label || label.length > FORUM_NAME_MAX) {
+    return res.status(400).json({ ok: false, error: `Forum name must be between 1 and ${FORUM_NAME_MAX} characters.` });
+  }
+
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!id) {
+    return res.status(400).json({ ok: false, error: 'Forum name must contain letters or numbers.' });
+  }
+  if (isForum(id)) {
+    return res.status(409).json({ ok: false, error: 'A forum with that name already exists.' });
+  }
+
+  // Signed-in accounts are limited by account; everyone else by their chat username.
+  const account = accountForRequest(req);
+  const creator = account ? account.username : truncate(req.body.name, 30);
+  if (!creator) {
+    return res.status(400).json({ ok: false, error: 'Username is required.' });
+  }
+  const limitKey = (account ? 'account:' : 'name:') + creator.toLowerCase();
+
+  const now = Date.now();
+  const last = forumCreations[limitKey];
+  if (typeof last === 'number' && now - last < FORUM_COOLDOWN_MS) {
+    const hours = Math.ceil((FORUM_COOLDOWN_MS - (now - last)) / (60 * 60 * 1000));
+    return res.status(429).json({
+      ok: false,
+      error: `You can only create one forum per day. Try again in about ${hours} hour${hours === 1 ? '' : 's'}.`,
+    });
+  }
+
+  // Update in-memory state before awaiting so concurrent requests see it.
+  const forum = { id, label, blurb: 'by ' + creator, createdAt: now };
+  const prevCreations = forumCreations;
+  const prevForums = customForums;
+  forumCreations = { [limitKey]: now };
+  for (const [key, time] of Object.entries(prevCreations)) {
+    if (key !== limitKey && now - time < FORUM_COOLDOWN_MS) forumCreations[key] = time;
+  }
+  customForums = [...prevForums, forum];
+  forum_ids.push(id);
+  messages[id] = [];
+
+  try {
+    await redis.set(CUSTOM_FORUMS_KEY, customForums);
+    await redis.set(FORUM_CREATIONS_KEY, forumCreations);
+  } catch (err) {
+    console.error('Failed to save forum:', err);
+    forumCreations = prevCreations;
+    customForums = prevForums;
+    forum_ids.splice(forum_ids.indexOf(id), 1);
+    delete messages[id];
+    return res.status(500).json({ ok: false, error: 'Could not create forum.' });
+  }
+
+  res.json({ ok: true, forum: { id, label, blurb: forum.blurb } });
 });
 
 app.post('/users', async (req, res) => {

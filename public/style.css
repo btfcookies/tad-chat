@@ -39,6 +39,8 @@ body{
 }
 
 .chat-side-left{
+  display: flex;
+  flex-direction: column;
   width: 300px;
   height: 800px;
   border: 0.5px solid var(--border-strong);
@@ -202,6 +204,30 @@ button{
   flex-direction: column;
   gap: 4px;
   padding: 10px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.new-forum-row{
+  display: flex;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+#new-forum-input{
+  flex: 1;
+  min-width: 0;
+  padding: 5px;
+}
+
+.new-forum-error{
+  margin: 0 10px 10px;
+  font-size: 12px;
+  color: #c0392b;
+}
+
+.new-forum-error[hidden]{
+  display: none;
 }
 
 .forum-btn{
