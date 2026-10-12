@@ -18,7 +18,7 @@ const FORUM_CREATIONS_KEY = 'forum_creations';
 const FORUM_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const FORUM_NAME_MAX = 40;
 let bannedIps = [];
-const forum_ids = ['general-discussion','math-on-level', 'math-honors', 'science-lane',  'science-carron', 'humanities-alipour', 'humanities-fox', 'humanities-balan', 'humanities-rutherford'];
+const forum_ids = ['general-discussion'];
 const isForum = (id) => forum_ids.includes(id);
 const messagesKey = (forum) => 'messages:' + forum;
 let messages = {};

@@ -1,15 +1,6 @@
 const vegetables = ['Potato', 'Cucumber', 'Tomato', 'Carrot']
 const FORUMS = [
-  {id: 'general-discussion', label: 'General Discussion', blurb: ' '},
-  {id: 'math-on-level', label: 'On Level Math', blurb: 'Algebra I'},
-  {id: 'math-honors', label: 'Honors Math', blurb: 'Algebra I-H'},
-  {id: 'science-lane', label: 'Science', blurb: "Dr. Lane's classes"},
-  {id: 'science-carron', label: 'Science', blurb: "Mr. Carron's classes"},
-  {id: 'humanities-alipour', label: 'Humanities', blurb: "Mrs. Alipour's class"},
-  {id: 'humanities-fox', label: 'Humanities', blurb: "Mr. Fox's class"},
-  {id: 'humanities-balan', label: 'Humanities', blurb: "Ms. Balan's classes"},
-  {id: 'humanities-rutherford', label: 'Humanities', blurb: "Mr. Rutherford's classes"}
-
+  {id: 'general-discussion', label: 'General Discussion', blurb: ' '}
 ];
 
 const BACKGROUND_STORAGE_KEY = 'storedBackground';
