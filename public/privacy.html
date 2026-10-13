@@ -32,7 +32,7 @@
 </head>
 <body>
   <h1>TAD Chat &mdash; Privacy Policy</h1>
-  <p class="updated">Last updated: September 9, 2026</p>
+  <p class="updated">Last updated: October 13, 2026</p>
 
   <p>
     This Privacy Policy describes what TAD Chat ("the Service") collects and stores today,
@@ -66,6 +66,21 @@
       <td>Username you choose</td>
       <td>Server (Upstash Redis)</td>
       <td>Identifies your posts to other users; not verified against any real identity.</td>
+    </tr>
+    <tr>
+      <td>If you create an account: your username, the school you select, and a hash of
+        your password (the password itself is never stored)</td>
+      <td>Server (Upstash Redis)</td>
+      <td>Reserves your username so nobody else can post under it, and lets you sign in.
+        The school is self-reported and not verified.</td>
+    </tr>
+    <tr>
+      <td>If you sign in: a sign-in cookie named <code>session</code> (a random token,
+        valid for up to 30 days or until you log out). The server keeps only a hash of
+        the token and the time it was created.</td>
+      <td>Your browser (cookie) and server (Upstash Redis)</td>
+      <td>Keeps you signed in. The cookie is not readable by page scripts and is not used
+        for tracking or analytics.</td>
     </tr>
     <tr>
       <td>Messages you post (text + timestamp + your username)</td>
@@ -120,9 +135,11 @@
     </tr>
   </table>
   <p>
-    Aside from the IP address and device/network telemetry described above, TAD Chat
-    does not currently use cookies, run analytics or tracking scripts, or collect email
-    or any identity information beyond the username you type in. The operator reserves
+    Aside from the IP address and device/network telemetry described above, and the
+    sign-in cookie and account details described above if you choose to create an
+    account, TAD Chat does not currently use cookies, run analytics or tracking scripts,
+    or collect email or any identity information beyond the username (and, for accounts,
+    the school) you enter. The operator reserves
     the right to add any of the above in a future version of the Service, in which case
     this Policy will be updated as described in Section 8.
   </p>
@@ -137,7 +154,9 @@
   <p>
     Usernames are first-come, first-served and are not tied to your real name, school
     login, or email in any way the Service enforces. Anyone can type any username that
-    is not already taken. Do not assume a username belongs to who it claims to.
+    is not already taken. Creating an account reserves a username so that nobody else
+    can post under it, but the school you select is self-reported and is not verified.
+    Do not assume a username belongs to who it claims to.
   </p>
 
   <h2>3. How long data is kept, and the operator's retention discretion</h2>

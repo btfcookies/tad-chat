@@ -2,7 +2,7 @@ const express = require('express');
 const { KEYS, FORUM_COOLDOWN_MS, FORUM_NAME_MAX } = require('../config');
 const { redis, state, isForum } = require('../state');
 const { normalize, truncate } = require('../lib/text');
-const { accountForRequest } = require('../lib/accounts');
+const { resolveSender } = require('../lib/accounts');
 const CONTRIBUTOR_NAMES = require('../../public/contributors');
 
 const router = express.Router();
@@ -29,16 +29,28 @@ router.post('/forums', async (req, res) => {
     return res.status(409).json({ ok: false, error: 'A forum with that name already exists.' });
   }
 
-  const account = accountForRequest(req);
-  const creator = account ? account.username : truncate(req.body.name, 30);
+  const sender = resolveSender(req, truncate(req.body.name, 30));
+  if (!sender.ok) {
+    return res.status(sender.status).json({ ok: false, error: sender.error });
+  }
+  const { account, name: creator } = sender;
   if (!creator) {
     return res.status(400).json({ ok: false, error: 'Username is required.' });
   }
   const limitKey = (account ? 'account:' : 'name:') + creator.toLowerCase();
   const isAdmin = !!account && CONTRIBUTOR_NAMES.includes(account.username.toLowerCase()); //excessive guardrails lmao
+  const hasAccount = !!account;
 
   const now = Date.now();
   const last = state.forumCreations[limitKey];
+
+  if (!hasAccount){
+    return res.status(429).json({
+      ok: false,
+      error: `Make an account to create your own forum`
+    })
+  }
+
   if (!isAdmin && typeof last === 'number' && now - last < FORUM_COOLDOWN_MS) {
     const hours = Math.ceil((FORUM_COOLDOWN_MS - (now - last)) / (60 * 60 * 1000));
     return res.status(429).json({

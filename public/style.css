@@ -308,9 +308,13 @@ button{
 }
 
 .account-btn{
-  margin-left: 130px;
-  font-size: 15px;
+  position: absolute;
+  top: 8px;
+  right: 44px;
+  padding: 6px 8px;
+  font-size: 14px;
   line-height: 1;
+  white-space: nowrap;
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -320,4 +324,134 @@ button{
 
 .account-btn:hover{
   background: var(--control-hover);
+}
+
+.account-overlay{
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.account-overlay[hidden]{
+  display: none;
+}
+
+.account-modal{
+  position: relative;
+  width: min(380px, 90vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  color: var(--text);
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.account-close{
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.account-close:hover{
+  background: var(--control-hover);
+}
+
+.account-tabs{
+  display: flex;
+  gap: 8px;
+  margin: 0 36px 16px 0;
+}
+
+.account-tab{
+  flex: 1;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.account-tab.active{
+  font-weight: bold;
+  background: var(--control-hover);
+  border-color: var(--border-strong);
+}
+
+.account-form h2{
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.account-form p{
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.account-form label{
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.account-form input,
+.account-form select{
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 8px;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+#school-field[hidden]{
+  display: none;
+}
+
+.account-form .account-error{
+  margin-top: 12px;
+  font-size: 13px;
+  color: #c0392b;
+}
+
+.account-form .account-error[hidden]{
+  display: none;
+}
+
+.account-submit{
+  width: 100%;
+  margin-top: 16px;
+  cursor: pointer;
+}
+
+.message-error{
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #c0392b;
+}
+
+.message-error[hidden]{
+  display: none;
 }

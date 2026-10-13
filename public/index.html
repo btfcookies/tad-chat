@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Advanced Calculus problems</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <div class="chat-layout">
@@ -26,10 +26,12 @@
         <input type="text" id="message-input" placeholder="Are we supposed to do problem #5?">
         <button onclick="sendMessage()">Send</button>
       </div>
+      <p id="message-error" class="message-error" role="alert" hidden></p>
       <div class="username-row">
         <span>Messaging as:</span>
+        <strong id="account-username" hidden></strong>
         <input type="text" id="username-input" placeholder="Enter a username">
-        <button onclick="updateUsername()">Submit</button>
+        <button type="button" id="username-submit" onclick="updateUsername()">Submit</button>
       </div>
     </div>
     <div class="chat-side">
@@ -39,7 +41,7 @@
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
       </button>
-      <button class="account-btn">Sign Up/Sign in</button>
+      <button type="button" class="account-btn" id="account-btn" onclick="onAccountButton()">Sign Up/Sign in</button>
       <h2>welcome to</h2>
       <h1>TAD CHAT</h1>
       <strong>dedicated to Geoffrey Wu</strong>
@@ -62,7 +64,34 @@
       <button onclick="setBackgroundImage()">Submit</button>
     </div>
   </div>
+  <div id="account-overlay" class="account-overlay" role="dialog" aria-modal="true" aria-labelledby="account-title" hidden>
+    <div class="account-modal">
+      <button type="button" class="account-close" aria-label="Close" onclick="closeAccountModal()">&times;</button>
+      <div class="account-tabs">
+        <button type="button" id="tab-signup" class="account-tab active" aria-pressed="true" onclick="setAccountMode('signup')">Sign Up</button>
+        <button type="button" id="tab-signin" class="account-tab" aria-pressed="false" onclick="setAccountMode('signin')">Sign In</button>
+      </div>
+      <form id="account-form" class="account-form" novalidate>
+        <h2 id="account-title">Create an account</h2>
+        <p id="account-blurb">An account reserves your username so nobody else can post as you.</p>
+        <label for="account-username-input">Username</label>
+        <input type="text" id="account-username-input" autocomplete="username" maxlength="30" placeholder="Geoffrey Wu">
+        <label for="account-password">Password</label>
+        <input type="password" id="account-password" autocomplete="new-password" maxlength="72" placeholder="At least 8 characters">
+        <div id="school-field">
+          <label for="school-input">School</label>
+          <select id="school-input">
+            <option value="stmarks">St. Mark's</option>
+            <option value="hday">Hockaday</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <p id="account-error" class="account-error" role="alert" hidden></p>
+        <button type="submit" id="account-submit" class="account-submit">Create account</button>
+      </form>
+    </div>
+  </div>
   <script src="contributors.js?v=1"></script>
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=5"></script>
 </body>
 </html>

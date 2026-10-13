@@ -100,28 +100,34 @@ function randomAnonName() {
   return 'Anonymous' + veg + num;
 }
 
-let myName = localStorage.getItem('handle');
+// The anonymous handle lives in localStorage and is never overwritten by an
+// account name, so signing out always returns to the same anonymous identity.
+let anonymousName = localStorage.getItem('handle');
 
-if (!myName){
-  myName = randomAnonName();
-  localStorage.setItem('handle', myName);
+if (!anonymousName){
+  anonymousName = randomAnonName();
+  localStorage.setItem('handle', anonymousName);
 }
+
+// The name messages are sent as: the account username when signed in.
+let myName = anonymousName;
+// { username, school, verified } while signed in, otherwise null.
+let account = null;
 
 async function registerName() {
   const res = await fetch('/users', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({name: myName, prevName: myName}),
+    body: JSON.stringify({name: anonymousName, prevName: anonymousName}),
   });
 
   if (res.status === 409) {
-    myName = randomAnonName();
-    localStorage.setItem('handle', myName);
+    anonymousName = randomAnonName();
+    localStorage.setItem('handle', anonymousName);
+    if (!account) myName = anonymousName;
     return registerName();
   }
 }
-
-registerName();
 
 const input = document.getElementById('message-input')
 input.addEventListener('keydown', (event) => {
@@ -184,16 +190,40 @@ async function sendMessage() {
   const input = document.getElementById('message-input')
   if (input.value.trim() === '') return;
 
-  await fetch('/messages', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      name: myName,
-      text: input.value,
-      forum: currentForum,
-      telemetry: collectTelemetry(),
-    }),
-  });
+  const wasSignedIn = !!account;
+  let res;
+  try {
+    res = await fetch('/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name: myName,
+        text: input.value,
+        forum: currentForum,
+        telemetry: collectTelemetry(),
+      }),
+    });
+  } catch {
+    showMessageError('Could not reach the server. Your message was not sent.');
+    return;
+  }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    if (wasSignedIn && res.status === 403) {
+      // The server no longer recognises our session (expired or logged out elsewhere).
+      await syncAccount();
+      if (!account) {
+        showMessageError('Your session expired. Please sign in again.');
+        openAccountModal('signin');
+        return;
+      }
+    }
+    showMessageError(data.error || 'Could not send message.');
+    return;
+  }
+
+  hideMessageError();
   sessionMessageCount += 1;
   input.value = '';
   resetComposeTracking();
@@ -236,23 +266,24 @@ async function updateUsername(){
   const input = document.getElementById('username-input');
   const newName = input.value.trim();
 
-  if (newName === '') return;
+  if (newName === '' || account) return;
 
   const res = await fetch('/users', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({name: newName, prevName: myName}),
+    body: JSON.stringify({name: newName, prevName: anonymousName}),
   });
 
   if (!res.ok) {
-    const { error } = await res.json();
+    const { error } = await res.json().catch(() => ({}));
     alert(error || 'Could not set that username.');
     return;
   }
 
   const data = await res.json();
-  myName = data.name;
-  localStorage.setItem('handle', myName);
+  anonymousName = data.name;
+  myName = anonymousName;
+  localStorage.setItem('handle', anonymousName);
 
   input.value = "";
   loadMessages();
@@ -277,6 +308,173 @@ function closeSettings() {
 function onSettingsKeydown(event) {
   if (event.key === 'Escape') closeSettings();
 }
+
+// Accounts
+const PASSWORD_MIN = 8; // mirrors the server, which is the authority
+
+const accountBtn = document.getElementById('account-btn');
+const accountOverlay = document.getElementById('account-overlay');
+const accountForm = document.getElementById('account-form');
+const accountUsernameInput = document.getElementById('account-username-input');
+const accountPasswordInput = document.getElementById('account-password');
+const accountSubmit = document.getElementById('account-submit');
+const accountError = document.getElementById('account-error');
+let accountMode = 'signup';
+
+function showMessageError(text) {
+  const el = document.getElementById('message-error');
+  el.textContent = text;
+  el.hidden = false;
+}
+
+function hideMessageError() {
+  document.getElementById('message-error').hidden = true;
+}
+
+function renderAccount() {
+  const signedIn = !!account;
+  accountBtn.textContent = signedIn ? 'Log out' : 'Sign Up/Sign in';
+
+  const nameLabel = document.getElementById('account-username');
+  nameLabel.textContent = signedIn ? account.username : '';
+  nameLabel.hidden = !signedIn;
+  document.getElementById('username-input').hidden = signedIn;
+  document.getElementById('username-submit').hidden = signedIn;
+}
+
+function setAccount(next) {
+  account = next ? { username: next.username, school: next.school, verified: next.verified } : null;
+  myName = account ? account.username : anonymousName;
+  renderAccount();
+}
+
+// Asks the server who we are. Leaves the current state alone if it can't answer.
+async function syncAccount() {
+  try {
+    const res = await fetch('/auth/me');
+    const data = await res.json();
+    setAccount(data.ok ? data : null);
+  } catch {
+    // network trouble: keep whatever we had
+  }
+}
+
+async function initAccount() {
+  await syncAccount();
+  // Only claim the anonymous handle once we know we aren't signed in; a signed-in
+  // session is not allowed to rename itself.
+  if (!account) registerName();
+}
+
+async function onAccountButton() {
+  if (!account) {
+    openAccountModal('signup');
+    return;
+  }
+
+  try {
+    const res = await fetch('/auth/logout', { method: 'POST' });
+    if (!res.ok) throw new Error('logout failed');
+  } catch {
+    alert('Could not log out. Please try again.');
+    return;
+  }
+  setAccount(null);
+  hideMessageError();
+  registerName();
+}
+
+function showAccountError(text) {
+  accountError.textContent = text;
+  accountError.hidden = false;
+}
+
+function hideAccountError() {
+  accountError.hidden = true;
+}
+
+function setAccountMode(mode) {
+  accountMode = mode;
+  const signup = mode === 'signup';
+
+  const signupTab = document.getElementById('tab-signup');
+  const signinTab = document.getElementById('tab-signin');
+  signupTab.classList.toggle('active', signup);
+  signupTab.setAttribute('aria-pressed', String(signup));
+  signinTab.classList.toggle('active', !signup);
+  signinTab.setAttribute('aria-pressed', String(!signup));
+
+  document.getElementById('account-title').textContent = signup ? 'Create an account' : 'Welcome back';
+  document.getElementById('account-blurb').textContent = signup
+    ? 'An account reserves your username so nobody else can post as you.'
+    : 'Sign in to post as your account.';
+  document.getElementById('school-field').hidden = !signup;
+  accountSubmit.textContent = signup ? 'Create account' : 'Sign in';
+  accountPasswordInput.autocomplete = signup ? 'new-password' : 'current-password';
+  accountPasswordInput.placeholder = signup ? 'At least 8 characters' : 'Your password';
+  hideAccountError();
+}
+
+function openAccountModal(mode = 'signup') {
+  setAccountMode(mode);
+  accountOverlay.hidden = false;
+  document.addEventListener('keydown', onAccountKeydown);
+  accountUsernameInput.focus();
+}
+
+function closeAccountModal() {
+  accountOverlay.hidden = true;
+  accountPasswordInput.value = '';
+  document.removeEventListener('keydown', onAccountKeydown);
+}
+
+function onAccountKeydown(event) {
+  if (event.key === 'Escape') closeAccountModal();
+}
+
+accountOverlay.addEventListener('click', (event) => {
+  if (event.target === accountOverlay) closeAccountModal();
+});
+
+accountForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const signup = accountMode === 'signup';
+  const username = accountUsernameInput.value.trim();
+  const password = accountPasswordInput.value;
+
+  if (!username) return showAccountError('Enter a username.');
+  if (!password) return showAccountError('Enter a password.');
+  if (signup && password.length < PASSWORD_MIN) {
+    return showAccountError(`Password must be at least ${PASSWORD_MIN} characters.`);
+  }
+
+  const payload = { username, password };
+  if (signup) payload.school = document.getElementById('school-input').value;
+
+  accountSubmit.disabled = true;
+  hideAccountError();
+  try {
+    const res = await fetch(signup ? '/auth/signup' : '/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      showAccountError(data.error || 'Something went wrong. Please try again.');
+      return;
+    }
+
+    setAccount(data);
+    hideMessageError();
+    accountUsernameInput.value = '';
+    closeAccountModal();
+  } catch {
+    showAccountError('Could not reach the server. Please try again.');
+  } finally {
+    accountSubmit.disabled = false;
+  }
+});
 
 function typewriter(el, text, speed = 90) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -483,6 +681,7 @@ function setBackgroundImage(){
 }
 
 // Intervals
+initAccount();
 setInterval(getUserCount, 30000);
 getUserCount();
 loadForumList();

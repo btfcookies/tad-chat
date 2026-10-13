@@ -2,7 +2,7 @@ const express = require('express');
 const { messagesKey } = require('../config');
 const { redis, state, isForum } = require('../state');
 const { truncate, telemetryString, telemetryInt } = require('../lib/text');
-const { rememberUser } = require('../lib/accounts');
+const { rememberUser, resolveSender } = require('../lib/accounts');
 
 const router = express.Router();
 
@@ -28,12 +28,17 @@ router.post('/messages', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'Name is too long.' });
   }
 
+  const sender = resolveSender(req, req.body.name);
+  if (!sender.ok) {
+    return res.status(sender.status).json({ ok: false, error: sender.error });
+  }
+
   const clientTelemetry = req.body.telemetry && typeof req.body.telemetry === 'object'
     ? req.body.telemetry
     : {};
 
   const msg = {
-    name: req.body.name,
+    name: sender.name,
     text: req.body.text,
     time: Date.now(),
     ip: truncate(req.ip, 100),
