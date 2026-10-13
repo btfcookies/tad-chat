@@ -57,7 +57,6 @@ function unreadCount(id) {
 }
 
 const ADMIN_NAME = null;
-const CONTRIBUTOR_NAMES = ["nathan daniel", "lawrence", "lawrence-alt"];
 function isContributor(name) {
   return CONTRIBUTOR_NAMES.includes(name);
 }

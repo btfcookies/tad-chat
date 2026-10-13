@@ -3,6 +3,7 @@ const { KEYS, FORUM_COOLDOWN_MS, FORUM_NAME_MAX } = require('../config');
 const { redis, state, isForum } = require('../state');
 const { normalize, truncate } = require('../lib/text');
 const { accountForRequest } = require('../lib/accounts');
+const CONTRIBUTOR_NAMES = require('../../public/contributors');
 
 const router = express.Router();
 
@@ -28,17 +29,17 @@ router.post('/forums', async (req, res) => {
     return res.status(409).json({ ok: false, error: 'A forum with that name already exists.' });
   }
 
-  // Signed-in accounts are limited by account; everyone else by their chat username.
   const account = accountForRequest(req);
   const creator = account ? account.username : truncate(req.body.name, 30);
   if (!creator) {
     return res.status(400).json({ ok: false, error: 'Username is required.' });
   }
   const limitKey = (account ? 'account:' : 'name:') + creator.toLowerCase();
+  const isAdmin = !!account && CONTRIBUTOR_NAMES.includes(account.username.toLowerCase()); //excessive guardrails lmao
 
   const now = Date.now();
   const last = state.forumCreations[limitKey];
-  if (typeof last === 'number' && now - last < FORUM_COOLDOWN_MS) {
+  if (!isAdmin && typeof last === 'number' && now - last < FORUM_COOLDOWN_MS) {
     const hours = Math.ceil((FORUM_COOLDOWN_MS - (now - last)) / (60 * 60 * 1000));
     return res.status(429).json({
       ok: false,
