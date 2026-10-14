@@ -61,6 +61,10 @@ function isContributor(name) {
   return CONTRIBUTOR_NAMES.includes(name);
 }
 
+function isBot(name) {
+  return BOT_NAMES.includes(name);
+}
+
 function makeRoleIcon(className, label, svg) {
   const span = document.createElement('span');
   span.className = className;
@@ -94,24 +98,35 @@ function makeContributorIcon() {
   );
 }
 
+function makeBotIcon() {
+  return makeRoleIcon(
+    'bot',
+    'Bot',
+    '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" ' +
+    'stroke="#6E7781" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<line x1="12" y1="2.5" x2="12" y2="6"/>' +
+    '<circle cx="12" cy="2.5" r="1" fill="#6E7781"/>' +
+    '<rect x="4" y="6" width="16" height="13" rx="3"/>' +
+    '<circle cx="9" cy="12" r="1.2" fill="#6E7781"/>' +
+    '<circle cx="15" cy="12" r="1.2" fill="#6E7781"/>' +
+    '<line x1="9" y1="16" x2="15" y2="16"/>' +
+    '</svg>'
+  );
+}
+
 function randomAnonName() {
   const veg = vegetables[Math.floor(Math.random() * vegetables.length)];
   const num = String(Math.floor(Math.random() * 10000) + 1);
   return 'Anonymous' + veg + num;
 }
 
-// The anonymous handle lives in localStorage and is never overwritten by an
-// account name, so signing out always returns to the same anonymous identity.
 let anonymousName = localStorage.getItem('handle');
 
 if (!anonymousName){
   anonymousName = randomAnonName();
   localStorage.setItem('handle', anonymousName);
 }
-
-// The name messages are sent as: the account username when signed in.
 let myName = anonymousName;
-// { username, school, verified } while signed in, otherwise null.
 let account = null;
 
 async function registerName() {
@@ -247,6 +262,8 @@ async function loadMessages({ forceScroll = false } = {}) {
     code.textContent = ` ${new Date(m.time).toLocaleTimeString()}`;
     if (m.name === ADMIN_NAME) {
       divtext.appendChild(makeCrownIcon());
+    } else if (isBot(m.name)) {
+      divtext.appendChild(makeBotIcon());
     } else if (isContributor(m.name)) {
       divtext.appendChild(makeContributorIcon());
     }

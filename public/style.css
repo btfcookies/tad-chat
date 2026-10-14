@@ -163,6 +163,7 @@ body{
 }
 
 .crown,
+.bot,
 .contributor{
   display: inline-flex;
   align-items: center;
