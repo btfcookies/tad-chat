@@ -11,5 +11,6 @@ TAD Chat uses:
 - [Vercel](https://vercel.com/) to host the subdomain
 - [Express JS](https://expressjs.com/) as a framework for the backend
 
-
+## Bots
+You can make a custom bot to perform various things on TAD Chat. Get started [here](https://github.com/btfcookies/tad-chat-bot)
 
