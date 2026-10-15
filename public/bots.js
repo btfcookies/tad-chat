@@ -1,2 +1,2 @@
-const BOT_NAMES = ["test"]; // add your bot name inside these brackets
+const BOT_NAMES = ["bot_lawrencium"]; // add your bot name inside these brackets
 if (typeof module != 'undefined') module.exports = BOT_NAMES;
