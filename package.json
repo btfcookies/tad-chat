@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node --env-file=.env server.js",
     "test": "node --test",
-    "update-local": "git pull; npm start"
+    "update-local": "git pull && npm start"
   },
   "repository": {
     "type": "git",
