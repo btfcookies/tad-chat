@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node --env-file=.env server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "update": "git pull; npm start"
   },
   "repository": {
     "type": "git",
